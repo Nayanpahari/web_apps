@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wallet Challenge</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      margin: 0;
+      padding: 1rem;
+    }
+    .wallet {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .items {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1rem;
+    }
+    .item {
+      background: #222;
+      padding: 1rem;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .item img {
+      width: 100px;
+      height: 100px;
+    }
+    .leaderboard {
+      margin-top: 2rem;
+      background: #222;
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    .timer {
+      margin-top: 1rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+    .share {
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wallet" id="wallet">💰 Wallet: $5,000,000,000,000</div>
+  <div>
+    Challenge Time (sec): <input type="number" id="challengeTime" value="60" min="10" max="300" />
+    <button onclick="startChallenge()">Start Challenge</button>
+    <button onclick="generateChallengeLink()">🔗 Get Challenge Link</button>
+  </div>
+  <div class="share" id="shareLink"></div>
+  <div class="timer" id="timer"></div>
+  <div class="items" id="itemList"></div>
+  <div class="leaderboard" id="leaderboard"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      getDocs,
+      query,
+      orderBy,
+      limit
+    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getAnalytics } from "firebase/analytics";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDXY4icmr1NAIaEOT7n2uy8cuXpDkrUnCk",
+      authDomain: "wallet-challenge-leaderboard.firebaseapp.com",
+      projectId: "wallet-challenge-leaderboard",
+      storageBucket: "wallet-challenge-leaderboard.firebasestorage.app",
+      messagingSenderId: "961591576841",
+      appId: "1:961591576841:web:ec5cee151e9d3e41862bd8",
+      measurementId: "G-KLW77ZL7N6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const analytics = getAnalytics(app);
+
+    async function submitScore(playerName, score) {
+      try {
+        await addDoc(collection(db, "leaderboard"), {
+          name: playerName,
+          score: score,
+          timestamp: Date.now()
+        });
+      } catch (e) {
+        console.error("❌ Error submitting score: ", e);
+      }
+    }
+
+    async function loadLeaderboard() {
+      const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
+      const querySnapshot = await getDocs(q);
+      const leaderboardEl = document.getElementById("leaderboard");
+      leaderboardEl.innerHTML = "<h3>🏆 Global Leaderboard</h3><ul>";
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        leaderboardEl.innerHTML += `<li><strong>${data.name}</strong>: $${data.score.toLocaleString()}</li>`;
+      });
+      leaderboardEl.innerHTML += "</ul>";
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      loadLeaderboard();
+      renderItems();
+      const urlParams = new URLSearchParams(window.location.search);
+      const challenge = urlParams.get("challenge");
+      if (challenge) {
+        document.getElementById("challengeTime").value = challenge;
+        startChallenge();
+      }
+    });
+
+    let wallet = 5000000000000;
+    let challengeActive = false;
+    let timerInterval = null;
+    const walletEl = document.getElementById("wallet");
+    const timerEl = document.getElementById("timer");
+
+    function startChallenge() {
+      const time = parseInt(document.getElementById("challengeTime").value);
+      wallet = 5000000000000;
+      challengeActive = true;
+      walletEl.textContent = `💰 Wallet: $${wallet.toLocaleString()}`;
+      renderItems();
+
+      let remaining = time;
+      timerEl.textContent = `⏱ Time Left: ${remaining}s`;
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        remaining--;
+        timerEl.textContent = `⏱ Time Left: ${remaining}s`;
+        if (remaining <= 0) {
+          clearInterval(timerInterval);
+          challengeActive = false;
+          const playerName = prompt("⏰ Time's up! Enter your name for the leaderboard:");
+          submitScore(playerName || "Anonymous", wallet);
+          wallet = 5000000000000;
+          walletEl.textContent = `💰 Wallet: $${wallet.toLocaleString()}`;
+          timerEl.textContent = "";
+        }
+      }, 1000);
+    }
+
+    function generateChallengeLink() {
+      const time = parseInt(document.getElementById("challengeTime").value);
+      const link = `${window.location.origin}${window.location.pathname}?challenge=${time}`;
+      const shareEl = document.getElementById("shareLink");
+      shareEl.innerHTML = `Share this link with a friend: <input value="${link}" readonly style="width:100%">`;
+    }
+
+    function renderItems() {
+      const items = [
+        { name: "Jet", basePrice: 1000000000, img: "https://img.icons8.com/color/96/airplane.png" },
+        { name: "Island", basePrice: 15000000000, img: "https://img.icons8.com/color/96/island.png" },
+        { name: "Car", basePrice: 70000000, img: "https://img.icons8.com/color/96/car.png" },
+        { name: "Laptop", basePrice: 2000, img: "https://img.icons8.com/color/96/laptop.png" },
+        { name: "Burger", basePrice: 10, img: "https://img.icons8.com/color/96/hamburger.png" },
+        { name: "Yacht", basePrice: 500000000, img: "https://img.icons8.com/color/96/yacht.png" },
+        { name: "Helicopter", basePrice: 300000000, img: "https://img.icons8.com/color/96/helicopter.png" },
+        { name: "Private Island", basePrice: 20000000000, img: "https://img.icons8.com/color/96/tropical-island.png" },
+        { name: "Diamond Ring", basePrice: 100000, img: "https://img.icons8.com/color/96/diamond.png" },
+        { name: "Gaming PC", basePrice: 4000, img: "https://img.icons8.com/color/96/monitor.png" },
+        { name: "Castle", basePrice: 750000000, img: "https://img.icons8.com/color/96/castle.png" },
+        { name: "Rocket", basePrice: 5000000000, img: "https://img.icons8.com/color/96/rocket.png" },
+        { name: "Robot", basePrice: 250000, img: "https://img.icons8.com/color/96/robot-2.png" }
+      ];
+
+      const itemList = document.getElementById("itemList");
+      itemList.innerHTML = "";
+      items.forEach((item) => {
+        const randomMultiplier = Math.random() * 0.4 + 0.8;
+        const trap = Math.random() < 0.15;
+        const price = Math.floor(item.basePrice * randomMultiplier * (trap ? 1.5 : 1));
+
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <img src="${item.img}" alt="${item.name}" />
+          <h4>${item.name}</h4>
+          <p>Price: $${price.toLocaleString()}</p>
+          <button>Buy</button>
+        `;
+        div.querySelector("button").onclick = () => buyItem(item.name, price);
+        itemList.appendChild(div);
+      });
+    }
+
+    function buyItem(name, price) {
+      if (!challengeActive) return alert("Start a challenge to begin!");
+      if (wallet >= price) {
+        wallet -= price;
+        walletEl.textContent = `💰 Wallet: $${wallet.toLocaleString()}`;
+      } else {
+        alert("Not enough money!");
+      }
+    }
+  </script>
+</body>
+</html>
