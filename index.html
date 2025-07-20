@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Billionaire Wallet Simulator</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+
+<body>
+  <div class="wallet" id="wallet">💰 Wallet: $5,000,000,000,000</div>
+  <div>
+    Challenge Time (sec):
+    <input type="number" id="challengeTime" value="60" min="10" max="300" />
+    <button id="startBtn">Start Challenge</button>
+    <button id="linkBtn">🔗 Get Challenge Link</button>
+  </div>
+
+  <div class="share" id="shareLink"></div>
+  <div class="timer" id="timer"></div>
+  <div class="items" id="itemList"></div>
+  <div class="leaderboard" id="leaderboard"></div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
